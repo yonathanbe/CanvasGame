@@ -303,7 +303,7 @@ UpdateObjectPosition = function (object) {
     if (object.xPos > canvas.width - object.width / 2 || object.xPos < object.width / 2) {
         object.xSpeed = -object.xSpeed;
     }
-    if (object.yPos > canvas.width - object.height / 2 || object.yPos < object.height / 2) {
+    if (object.yPos > canvas.height - object.height / 2 || object.yPos < object.height / 2) {
         object.ySpeed = -object.ySpeed;
     }
     object.xPos += object.xSpeed;
