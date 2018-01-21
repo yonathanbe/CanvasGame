@@ -33,6 +33,12 @@ var bulletTimer = 18;
 // used to calculate the aiming angle
 var lastMouseX = 0;
 var lastMouseY = 0;
+
+MakeExplosionSound = function(){
+    var audio = new Audio("Style/Sound/explosion.wav");
+    audio.play();
+    
+}
 //get the distance between 2 points. NOT IN USE ATM
 GetDistance = function (o1, o2) {
     var dx = o1.xPos - o2.xPos;
@@ -194,6 +200,7 @@ Render = function () {
                 delete enemyList[eKey];
                 delete bulletList[key];
                 score += 100;
+                MakeExplosionSound();
                 break;
             }
         }
