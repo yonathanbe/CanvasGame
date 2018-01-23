@@ -1,23 +1,7 @@
 window.addEventListener('load', Load);
 var ctx, canvas;
 //player object
-var player = {
-    xPos: 10,
-    yPos: 10,
-    xSpeed: 10,
-    ySpeed: 10,
-    hp: 10,
-    width: 20,
-    height: 20,
-    color: 'green',
-    atkSpeed: 1,
-    atkCounter: 0,
-    down: false,
-    up: false,
-    right: false,
-    left: false,
-    aimAngle: 0
-};
+var player;
 //global variable and consts 
 var enemyList = {};
 var upgradeList = {};
@@ -33,7 +17,7 @@ var bulletTimer = 18;
 // used to calculate the aiming angle
 var lastMouseX = 0;
 var lastMouseY = 0;
-
+//make the sound effevt of explosion
 MakeExplosionSound = function(){
     var audio = new Audio("Style/Sound/explosion.wav");
     audio.play();
@@ -68,9 +52,31 @@ TestCollisionRect = function (rect1, rect2) {
         && rect1.y <= rect2.y + rect2.height
         && rect2.y <= rect1.y + rect1.height;
 }
+
+CreatePlayer = function(){
+    player = {
+        type: "player",
+        xPos: 10,
+        yPos: 10,
+        xSpeed: 10,
+        ySpeed: 10,
+        hp: 10,
+        width: 20,
+        height: 20,
+        color: 'green',
+        atkSpeed: 1,
+        atkCounter: 0,
+        down: false,
+        up: false,
+        right: false,
+        left: false,
+        aimAngle: 0
+    };
+}
 //enemy constractur
 Enemy = function (x, y, xs, ys, key, width, height, color) {
     var temp = {
+        type: "enemy",
         xPos: x,
         yPos: y,
         xSpeed: xs,
@@ -79,13 +85,16 @@ Enemy = function (x, y, xs, ys, key, width, height, color) {
         width: width,
         height: height,
         color: color,
-        aimAngle: 0
+        aimAngle: 0,
+        atkSpeed: 1,
+        atkCounter:0
     };
     enemyList[key] = temp;
 }
 //upgrade constractur
 Upgrade = function (x, y, xs, ys, key, width, height, color, type) {
     var temp = {
+        type: "upgrade",
         xPos: x,
         yPos: y,
         xSpeed: xs,
@@ -101,6 +110,7 @@ Upgrade = function (x, y, xs, ys, key, width, height, color, type) {
 //bullet constractur
 Bullet = function (x, y, xs, ys, key, width, height, color) {
     var temp = {
+        type: "bullet",
         xPos: x,
         yPos: y,
         xSpeed: xs,
@@ -115,21 +125,32 @@ Bullet = function (x, y, xs, ys, key, width, height, color) {
 }
 //shot a bullet everytime the user left click the mouse 
 document.onclick = function (e) {
-    if (player.atkCounter > 25) {
-        CreateAimedBullet(player);
-        player.atkCounter = 0;
+    performAttack(player);
+}
+
+performAttack = function(o){
+    if (o.atkCounter > 25) {
+        CreateAimedBullet(o);
+        o.atkCounter = 0;
     }
 }
+
 // shot a special attack when the user right click the mouse
 document.oncontextmenu = function (e) {
-    if (player.atkCounter > 50) {
-        CreateAimedBullet(player, player.aimAngle - 20);
-        CreateAimedBullet(player);
-        CreateAimedBullet(player, player.aimAngle + 20);
-        player.atkCounter = 0;
-    }
+    performSpecialAttack(player);
     e.preventDefault();
 }
+
+performSpecialAttack = function(o){
+    if (o.atkCounter > 50) {
+        CreateAimedBullet(o, o.aimAngle - 20);
+        CreateAimedBullet(o);
+        CreateAimedBullet(o, o.aimAngle + 20);
+        o.atkCounter = 0;
+    }
+}
+
+
 //the function the render the game
 Render = function () {
     //increase the framecounter and the score every frame
@@ -200,6 +221,7 @@ Render = function () {
                 delete enemyList[eKey];
                 delete bulletList[key];
                 score += 100;
+                //BOOM
                 MakeExplosionSound();
                 break;
             }
@@ -213,9 +235,7 @@ Render = function () {
         StartNewGame();
     }
     //updating the position of the player
-    updatePlayerPosition();
-    //drawing the player
-    Drawobject(player);
+    UpdateObject(player);
     //drawing hp and score
     ctx.fillText(player.hp + "HP", 0, 30);
     ctx.fillText("score: " + score, 200, 30);
@@ -271,35 +291,6 @@ document.onkeyup = function (e) {
         player.up = false;
     }
 }
-//update the player position according to the keys the user presses
-updatePlayerPosition = function () {
-    if (player.right) {
-        player.xPos += player.xSpeed;
-        if (player.xPos >= canvas.width - player.width / 2) {
-            player.xPos = canvas.width - player.width / 2;
-        }
-    }
-    if (player.left) {
-        player.xPos -= player.xSpeed;
-        if (player.xPos <= player.width/2) {
-            player.xPos = player.width / 2;
-        }
-    }
-    if (player.down) {
-        player.yPos += player.ySpeed;
-        if (player.yPos >= canvas.height - player.height / 2) {
-            player.yPos = canvas.height - player.height / 2 ;
-        }
-    }
-    if (player.up) {
-        player.yPos -= player.ySpeed;
-        if (player.yPos <= player.height / 2) {
-            player.yPos = player.height / 2;
-        }
-    }
-    //calculate the aiming angle after the user moved the player
-    CalculateBulletAngle();
-}
 //update the position of a given object and drawing it
 UpdateObject = function (object) {
     UpdateObjectPosition(object);
@@ -307,14 +298,44 @@ UpdateObject = function (object) {
 }
 //update the position of a given object
 UpdateObjectPosition = function (object) {
-    if (object.xPos > canvas.width - object.width / 2 || object.xPos < object.width / 2) {
-        object.xSpeed = -object.xSpeed;
+    if (object.type == "player"){
+        if (player.right) {
+            player.xPos += player.xSpeed;
+            if (player.xPos >= canvas.width - player.width / 2) {
+                player.xPos = canvas.width - player.width / 2;
+            }
+        }
+        if (player.left) {
+            player.xPos -= player.xSpeed;
+            if (player.xPos <= player.width/2) {
+                player.xPos = player.width / 2;
+            }
+        }
+        if (player.down) {
+            player.yPos += player.ySpeed;
+            if (player.yPos >= canvas.height - player.height / 2) {
+                player.yPos = canvas.height - player.height / 2 ;
+            }
+        }
+        if (player.up) {
+            player.yPos -= player.ySpeed;
+            if (player.yPos <= player.height / 2) {
+                player.yPos = player.height / 2;
+            }
+        }
+        //calculate the aiming angle after the user moved the player
+        CalculateBulletAngle();
     }
-    if (object.yPos > canvas.height - object.height / 2 || object.yPos < object.height / 2) {
-        object.ySpeed = -object.ySpeed;
-    }
-    object.xPos += object.xSpeed;
-    object.yPos += object.ySpeed;
+    else{
+        if (object.xPos > canvas.width - object.width / 2 || object.xPos < object.width / 2) {
+            object.xSpeed = -object.xSpeed;
+        }
+        if (object.yPos > canvas.height - object.height / 2 || object.yPos < object.height / 2) {
+            object.ySpeed = -object.ySpeed;
+        }
+        object.xPos += object.xSpeed;
+        object.yPos += object.ySpeed;   
+    }   
 }
 //draw a given object
 Drawobject = function (object) {
@@ -421,4 +442,5 @@ function Load() {
     CreateRandomEnemy();
     CreateRandomEnemy();
     CreateRandomEnemy();
+    CreatePlayer();
 }
