@@ -173,7 +173,7 @@ Enemy = function (x, y, xs, ys, key, width, height, color) {
     var entityUpdate = self.Update;
     self.Update = function(){
         entityUpdate();
-        self.performAttack();
+        //self.performAttack();
         // testing to see if the player and the enemies are colliding
         var collision = player.TestCollision(self);
         //decrease player HP if so
@@ -229,17 +229,16 @@ Bullet = function (x, y, xs, ys, key, width, height, color) {
         }
         //check to see if the bullet hit an enemy
         for (var eKey in enemyList) {
-            // var enemy = enemyList[eKey];
-            // var collision = self.TestCollision(enemy);
-            // //delete the enemy if so
-            // if (collision) {
-            //     delete enemyList[eKey];
-            //     delete bulletList[key];
-            //     score += 100;
-            //     //BOOM
-            //     MakeExplosionSound();
-            //     break;
-            // }
+            var enemy = enemyList[eKey];
+            var collision = self.TestCollision(enemy);
+            //delete the enemy if so
+            if (collision) {
+                delete enemyList[eKey];
+                delete bulletList[key];
+                score += 100;
+                //BOOM
+                MakeExplosionSound();
+            }
         }
         if(toRemove){
             delete bulletList[self.key];
@@ -256,9 +255,6 @@ document.oncontextmenu = function (e) {
     player.performSpecialAttack();
     e.preventDefault();
 }
-
-
-
 //the function the render the game
 Render = function () {
     //increase the framecounter and the score every frame
