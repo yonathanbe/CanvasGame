@@ -42,7 +42,8 @@ Entity = function(type, key, x, y,xs,ys,width,height,color){
         ySpeed: ys,
         width: width,
         height:height,
-        color:color
+        color:color,
+        key:key
     }
     //get the distance between 2 points. NOT IN USE ATM
     self.GetDistance = function(o){
@@ -80,35 +81,6 @@ Entity = function(type, key, x, y,xs,ys,width,height,color){
     }
     //update the position of the object
     self.UpdatePosition = function(){
-        if (self.type == "player"){
-            if (self.right) {
-                self.xPos += self.xSpeed;
-                if (self.xPos >= canvas.width - self.width / 2) {
-                    self.xPos = canvas.width - self.width / 2;
-                }
-            }
-            if (self.left) {
-                self.xPos -= self.xSpeed;
-                if (self.xPos <= self.width/2) {
-                    self.xPos = self.width / 2;
-                }
-            }
-            if (self.down) {
-                self.yPos += self.ySpeed;
-                if (self.yPos >= canvas.height - self.height / 2) {
-                    self.yPos = canvas.height - self.height / 2 ;
-                }
-            }
-            if (self.up) {
-                self.yPos -= self.ySpeed;
-                if (self.yPos <= self.height / 2) {
-                    self.yPos = self.height / 2;
-                }
-            }
-            //calculate the aiming angle after the user moved the player
-            CalculateBulletAngle();
-        }
-        else{
             if (self.xPos > canvas.width - self.width / 2 || self.xPos < self.width / 2) {
                 self.xSpeed = -self.xSpeed;
             }
@@ -116,71 +88,175 @@ Entity = function(type, key, x, y,xs,ys,width,height,color){
                 self.ySpeed = -self.ySpeed;
             }
             self.xPos += self.xSpeed;
-            self.yPos += self.ySpeed;   
-        }   
+            self.yPos += self.ySpeed;    
     }
     return self;
 }
 
-CreatePlayer = function(){
-    var self = Entity("player", "ID", 10, 10, 10,10,20,20,'green');
-    self.hp = 10
-    self.atkSpeed = 1;
+Actor = function(type, key, x, y,xs,ys,width,height,color, hp, atkSpeed){
+    var self = Entity(type, key, x, y,xs,ys,width,height,color);
+    self.hp = hp;
+    self.aimAngle = 0;
+    self.atkSpeed = atkSpeed;
     self.atkCounter = 0;
+    var entityUpdate = self.Update;
+    self.Update = function(){
+        entityUpdate();
+        self.atkCounter += self.atkSpeed;
+    }
+    self.performAttack = function(){
+        if (self.atkCounter > 25) {
+            CreateAimedBullet(self);
+            self.atkCounter = 0;
+        }
+    }
+    self.performSpecialAttack = function(){
+        if (self.atkCounter > 50) {
+            CreateAimedBullet(self, self.aimAngle - 20);
+            CreateAimedBullet(self);
+            CreateAimedBullet(self, self.aimAngle + 20);
+            self.atkCounter = 0;
+        }
+    }
+    return self;
+}
+
+Player = function(){
+    var self = Actor("player", "ID", 10, 10, 10, 10, 20, 20, 'green', 10, 1);
+    self.UpdatePosition = function(){
+        if (self.right) {
+            self.xPos += self.xSpeed;
+            if (self.xPos >= canvas.width - self.width / 2) {
+                self.xPos = canvas.width - self.width / 2;
+            }
+        }
+        if (self.left) {
+            self.xPos -= self.xSpeed;
+            if (self.xPos <= self.width/2) {
+                self.xPos = self.width / 2;
+            }
+        }
+        if (self.down) {
+            self.yPos += self.ySpeed;
+            if (self.yPos >= canvas.height - self.height / 2) {
+                self.yPos = canvas.height - self.height / 2 ;
+            }
+        }
+        if (self.up) {
+            self.yPos -= self.ySpeed;
+            if (self.yPos <= self.height / 2) {
+                self.yPos = self.height / 2;
+            }
+        }
+        //calculate the aiming angle after the user moved the player
+        CalculateBulletAngle();
+    }
     self.down = false;
     self.up = false;
     self.right = false;
-    self. left = false;
-    self.aimAngle = 0;
-    player = self;
+    self.left = false;
+    var entityUpdate = self.Update;
+    self.Update = function(){
+    entityUpdate()
+    //player lost
+        if (self.hp <= 0) {
+            var endTime = Date.now();
+            console.log("you lost", (endTime - startTime) / 1000);
+            StartNewGame();
+        }
+    }
+    return self;
 }
 //enemy constractur
 Enemy = function (x, y, xs, ys, key, width, height, color) {
-    var self = Entity("enemy", key, x,y,xs,ys,width,height,color);
-    self.hp = 10;
-    self.aimAngle = 0;
-    self.atkSpeed = 1;
-    self.atkCounter = 0;
+    var self = Actor("enemy", key, x,y,xs,ys,width,height,color, 10, 1);
+    var entityUpdate = self.Update;
+    self.Update = function(){
+        entityUpdate();
+        self.performAttack();
+        // testing to see if the player and the enemies are colliding
+        var collision = player.TestCollision(self);
+        //decrease player HP if so
+        if (collision) {
+            player.hp -= 1;
+
+
+        }
+    }
     enemyList[key] = self;
 }
 //upgrade constractur
 Upgrade = function (x, y, xs, ys, key, width, height, color, category) {
     var self = Entity("upgrade", key, x,y,xs,ys,width,height,color);
     self.category = category;
+    var entityUpdate = self.Update;
+    self.Update = function(){
+        entityUpdate();
+        //testing to see if the player is colliding with an upgrade
+        var collision = player.TestCollision(self);
+        //give the bonuse according to the type
+        if (collision) {
+            //giving the player between 0-500 points
+            if (self.category == 0) {
+                score += Math.round(Math.random() * 500);
+                delete upgradeList[self.key];
+            }
+            //increase the player attack speed
+            else if (self.category == 1) {
+                player.atkSpeed = 5;
+                delete upgradeList[self.key];
+            }
+            
+
+
+        }
+    }
+
     upgradeList[key] = self;
 }
 //bullet constractur
 Bullet = function (x, y, xs, ys, key, width, height, color) {
     var self = Entity("bullet", key, x,y,xs,ys,width,height,color);
     self.timer = 0;
+    var entityUpdate = self.Update;
+    self.Update = function(){
+        entityUpdate();
+        var toRemove = false;
+        self.timer++;
+        //deleting all the bullets which are alive for too long
+        if (self.timer > bulletTimer) {
+            toRemove = true;
+        }
+        //check to see if the bullet hit an enemy
+        for (var eKey in enemyList) {
+            // var enemy = enemyList[eKey];
+            // var collision = self.TestCollision(enemy);
+            // //delete the enemy if so
+            // if (collision) {
+            //     delete enemyList[eKey];
+            //     delete bulletList[key];
+            //     score += 100;
+            //     //BOOM
+            //     MakeExplosionSound();
+            //     break;
+            // }
+        }
+        if(toRemove){
+            delete bulletList[self.key];
+        }
+    }
     bulletList[key] = self;
 }
 //shot a bullet everytime the user left click the mouse 
 document.onclick = function (e) {
-    performAttack(player);
+    player.performAttack();
 }
-
-performAttack = function(o){
-    if (o.atkCounter > 25) {
-        CreateAimedBullet(o);
-        o.atkCounter = 0;
-    }
-}
-
 // shot a special attack when the user right click the mouse
 document.oncontextmenu = function (e) {
-    performSpecialAttack(player);
+    player.performSpecialAttack();
     e.preventDefault();
 }
 
-performSpecialAttack = function(o){
-    if (o.atkCounter > 50) {
-        CreateAimedBullet(o, o.aimAngle - 20);
-        CreateAimedBullet(o);
-        CreateAimedBullet(o, o.aimAngle + 20);
-        o.atkCounter = 0;
-    }
-}
 
 
 //the function the render the game
@@ -196,76 +272,22 @@ Render = function () {
     if (frameCounter % 420 == 0) {//blaze it
         CreateRandomUpgrade();
     }
-    //charging the attack
-    player.atkCounter += player.atkSpeed;
     //deleting the canvas before drawing everything again
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     //drawing all the enemies, upgrades and bullets
     for (var key in enemyList) {
         var enemy = enemyList[key];
         enemy.Update();
-        // testing to see if the player and the enemies are colliding
-        var collision = player.TestCollision(enemy);
-        //decrease player HP if so
-        if (collision) {
-            player.hp -= 1;
-
-
-        }
     }
     for (var key in upgradeList) {
         var upgrade = upgradeList[key];
-        upgrade.Draw();
-        //testing to see if the player is colliding with an upgrade
-        var collision = player.TestCollision(upgrade);
-        //give the bonuse according to the type
-        if (collision) {
-            //giving the player between 0-500 points
-            if (upgrade.category == 0) {
-                score += Math.round(Math.random() * 500);
-                delete upgradeList[key];
-            }
-            //increase the player attack speed
-            else if (upgrade.category == 1) {
-                player.atkSpeed = 5;
-                delete upgradeList[key];
-            }
-            
-
-
-        }
+        upgrade.Update();
     }
     for (var key in bulletList) {
         var bullet = bulletList[key];
         bullet.Update();
-        bullet.timer++;
-        //deleting all the bullets which are alive for too long
-        if (bullet.timer == bulletTimer) {
-            delete bulletList[key];
-            continue;
-        }
-        //check to see if the bullet hit an enemy
-        for (var eKey in enemyList) {
-            var enemy = enemyList[eKey];
-            var collision = bullet.TestCollision(enemy);
-            //delete the enemy if so
-            if (collision) {
-                delete enemyList[eKey];
-                delete bulletList[key];
-                score += 100;
-                //BOOM
-                MakeExplosionSound();
-                break;
-            }
-        }
+    }
 
-    }
-    //player lost
-    if (player.hp <= 0) {
-        var endTime = Date.now();
-        console.log("you lost", (endTime - startTime) / 1000);
-        StartNewGame();
-    }
     //updating the position of the player
     player.Update();
     //drawing hp and score
@@ -422,5 +444,6 @@ function Load() {
     CreateRandomEnemy();
     CreateRandomEnemy();
     CreateRandomEnemy();
-    CreatePlayer();
+    player = Player();
 }
+    
