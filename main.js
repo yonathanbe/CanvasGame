@@ -53,7 +53,7 @@ Entity = function(type, key, x, y,xs,ys,width,height,color){
     }
     // test the collision between self and another object
     self.TestCollision = function(o){
-        //checks if the palyer is immune at the mmoment
+        //checks if the palyer is immune at the moment
         if (self.type == "player" && o.type == "enemy" && self.immune) {
             return false;
         }
@@ -160,9 +160,12 @@ Player = function(){
     self.right = false;
     self.left = false;
     self.immune = false;
+    self.immuneFrames = 0;
     var entityUpdate = self.Update;
     self.Update = function(){
     entityUpdate()
+    //decrease the immune time
+    player.immuneFrames = player.immuneFrames > 0 ? player.immuneFrames-- : 0;
     //player lost
         if (self.hp <= 0) {
             var endTime = Date.now();
@@ -183,12 +186,15 @@ Enemy = function (x, y, xs, ys, key, width, height, color) {
         var collision = player.TestCollision(self);
         //decrease player HP if so
         if (collision) {
-            player.hp -= 1;
-
-
+            enemyCollision();
         }
     }
     enemyList[key] = self;
+}
+
+var enemyCollision = function(){
+    player.hp -= 1;
+    player.immuneFrames = 40;
 }
 //upgrade constractur
 Upgrade = function (x, y, xs, ys, key, width, height, color, category) {
