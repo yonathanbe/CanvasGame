@@ -318,6 +318,7 @@ StartNewGame = function () {
     player.hp = 10;
     player.atkSpeed = 1;
     player.immune = false;
+    player.immuneFrames = 0;
     startTime = Date.now();
     frameCounter = 0;
     enemyList = {};
