@@ -17,6 +17,8 @@ var bulletTimer = 18;
 // used to calculate the aiming angle
 var lastMouseX = 0;
 var lastMouseY = 0;
+// const to calculate the reload bar
+var atkCounterConst = 25;
 //make the sound effevt of explosion
 MakeExplosionSound = function(){
     var audio = new Audio("Style/Sound/explosion.wav");
@@ -109,7 +111,7 @@ Actor = function(type, key, x, y,xs,ys,width,height,color, hp, atkSpeed){
         self.atkCounter += self.atkSpeed;
     }
     self.performAttack = function(){
-        if (self.atkCounter > 25) {
+        if (self.atkCounter > atkCounterConst) {
             CreateAimedBullet(self);
             self.atkCounter = 0;
         }
@@ -313,7 +315,11 @@ Render = function () {
     player.Update();
     //drawing hp and score
     ctx.fillText(player.hp + "HP", 0, 30);
-    ctx.fillText("score: " + score, 200, 30);
+    ctx.fillText("Score: " + score, 150, 30);
+    ctx.fillText("Reload: ", 350, 30);
+    ctx.strokeRect(460, 11,100, 20);
+
+    ctx.fillRect(460, 11, , 20)
 }
 //reset all the variables after the user lost
 StartNewGame = function () {
