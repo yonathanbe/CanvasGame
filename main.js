@@ -165,7 +165,7 @@ Player = function(){
     self.Update = function(){
     entityUpdate()
     //decrease the immune time
-    player.immuneFrames = player.immuneFrames > 0 ? player.immuneFrames-- : 0;
+    immunityManager();
     //player lost
         if (self.hp <= 0) {
             var endTime = Date.now();
@@ -174,6 +174,15 @@ Player = function(){
         }
     }
     return self;
+}
+
+var immunityManager = function(){
+    if (player.immuneFrames > 0) {
+        player.immuneFrames--;
+    }
+    else{
+        player.immune = false;
+    }
 }
 //enemy constractur
 Enemy = function (x, y, xs, ys, key, width, height, color) {
@@ -194,6 +203,7 @@ Enemy = function (x, y, xs, ys, key, width, height, color) {
 
 var enemyCollision = function(){
     player.hp -= 1;
+    player.immune = true;
     player.immuneFrames = 40;
 }
 //upgrade constractur
