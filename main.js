@@ -53,6 +53,10 @@ Entity = function(type, key, x, y,xs,ys,width,height,color){
     }
     // test the collision between self and another object
     self.TestCollision = function(o){
+        //checks if the palyer is immune at the mmoment
+        if (self.type == "player" && o.type == "enemy" && self.immune) {
+            return false;
+        }
         var rect1 = {
             x: self.xPos - self.width / 2,
             y: self.yPos - self.height / 2,
@@ -155,6 +159,7 @@ Player = function(){
     self.up = false;
     self.right = false;
     self.left = false;
+    self.immune = false;
     var entityUpdate = self.Update;
     self.Update = function(){
     entityUpdate()
