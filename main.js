@@ -318,8 +318,9 @@ Render = function () {
     ctx.fillText("Score: " + score, 150, 30);
     ctx.fillText("Reload: ", 350, 30);
     ctx.strokeRect(460, 11,100, 20);
-
-    ctx.fillRect(460, 11, , 20)
+    barToDraw = (player.atkCounter / atkCounterConst) * 100;
+    barToDraw = barToDraw >= 100 ? 100 : barToDraw;
+    ctx.fillRect(460, 11, barToDraw, 20);
 }
 //reset all the variables after the user lost
 StartNewGame = function () {
