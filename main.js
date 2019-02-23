@@ -179,7 +179,9 @@ Player = function(){
 var immunityManager = function(){
     if (player.immuneFrames > 0) {
         player.immuneFrames--;
-        player.color = player.color == "green" ? "white" : "green";
+        if (player.immuneFrames % 2 == 0) {
+            player.color = player.color == "green" ? "white" : "green";
+        }
     }
     else{
         player.immune = false;
