@@ -163,9 +163,9 @@ Player = function(){
     self.immuneFrames = 0;
     var entityUpdate = self.Update;
     self.Update = function(){
-    entityUpdate()
     //decrease the immune time
     immunityManager();
+    entityUpdate()
     //player lost
         if (self.hp <= 0) {
             var endTime = Date.now();
@@ -179,9 +179,11 @@ Player = function(){
 var immunityManager = function(){
     if (player.immuneFrames > 0) {
         player.immuneFrames--;
+        player.color = player.color == "green" ? "white" : "green";
     }
     else{
         player.immune = false;
+        player.color = "green";
     }
 }
 //enemy constractur
