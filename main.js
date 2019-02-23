@@ -315,6 +315,7 @@ Render = function () {
 StartNewGame = function () {
     player.hp = 10;
     player.atkSpeed = 1;
+    player.immune = false;
     startTime = Date.now();
     frameCounter = 0;
     enemyList = {};
